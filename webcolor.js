@@ -174,8 +174,21 @@ webcolor.prototype = {
       targetcolor = webcolor(targetcolor)
       let maxReached = false
       while (this.contrastRatio(targetcolor) < cmin && !maxReached) {
-        // lighten or darken targetcolor by 20% until the minimum contrast (or black or white) is reached
-        targetcolor = targetcolor.shadeBlend(0.2 * (this.isDark() ? 1 : -1))
+        // lighten or darken targetcolor by 20% until the minimum contrast (or black or white) is reached.
+        // decide whether to darken or lighten target color:
+        // if target color is darker than base color then further darken it,
+        // but only if there is sufficient contrast between the base color and black, else lighten it
+        const tl = targetcolor.getLuminance()
+        const l = this.getLuminance()
+        let sd; // shade direction, -1 for darken or 1 for lighten
+        if (tl === l) {
+          sd = this.isDark() ? 1 : -1
+        } else if (tl < l) {
+          sd = (this.contrastRatio('#000000') > cmin) ? -1 : 1
+        } else {
+          sd = (this.contrastRatio('#ffffff') > cmin) ? 1 : -1
+        }
+        targetcolor = targetcolor.shadeBlend(0.2 * sd)
         if (targetcolor.isBlack() || targetcolor.isWhite()) maxReached = true
       }
       return targetcolor
